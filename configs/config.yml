@@ -1,0 +1,5 @@
+taskFile: "tasks.tpf"
+anyTimeSymbol: "*"
+tasksSeparationSymbol: "\n"
+multiTimeSeparationSymbol: ","
+eachSymbol: "/"
