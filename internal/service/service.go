@@ -2,8 +2,8 @@
 package service
 
 import (
-	"fmt"
 	"slices"
+	"sync"
 	"time"
 
 	taskplanner "github.com/SashaVolohov/taskPlanner"
@@ -33,7 +33,12 @@ func (s *Service) GetTasksCount() int {
 	return len(s.tasks)
 }
 
-func (s *Service) taskWorker(currentTimeParameters taskplanner.TaskTimeParameters, tasks <-chan taskplanner.Task, errChannel chan<- error) {
+func (s *Service) taskWorker(currentTimeParameters taskplanner.TaskTimeParameters, tasks <-chan taskplanner.Task, errChannel chan<- error, wg *sync.WaitGroup) {
+
+	defer func() {
+		wg.Done()
+	}()
+
 Exit:
 	for task := range tasks {
 		taskTimeParameters := task.GetTaskTimeParameters(currentTimeParameters)
@@ -41,7 +46,6 @@ Exit:
 
 			similarFound := slices.Contains(taskTimeParameters[i], currentTimeParameters[i][taskplanner.FirstTimeArgument])
 			if !similarFound {
-				fmt.Print(taskTimeParameters, " - ", currentTimeParameters)
 				continue Exit
 			}
 
@@ -53,8 +57,6 @@ Exit:
 
 func (s *Service) RunTasksByTime(time time.Time, errChannel chan<- error) {
 
-	fmt.Print(time.GoString())
-
 	var currentTimeParameters taskplanner.TaskTimeParameters
 
 	currentTimeParameters[taskplanner.TaskMinute] = append(currentTimeParameters[taskplanner.TaskMinute], time.Minute())
@@ -65,13 +67,18 @@ func (s *Service) RunTasksByTime(time time.Time, errChannel chan<- error) {
 
 	tasks := make(chan taskplanner.Task, len(s.tasks))
 
+	var wg sync.WaitGroup
+
 	for range workersCount {
-		go s.taskWorker(currentTimeParameters, tasks, errChannel)
+		wg.Add(1)
+		go s.taskWorker(currentTimeParameters, tasks, errChannel, &wg)
 	}
 
 	for _, task := range s.tasks {
 		tasks <- task
 	}
 	close(tasks)
+
+	wg.Wait()
 
 }

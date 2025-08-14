@@ -18,9 +18,9 @@ var testTasksDescription = []struct {
 	DayOfWeek []int
 	Command   string
 }{
-	{[]int{0}, []int{0}, []int{10}, []int{10}, []int{taskplanner.AnyTime}, "winver"},
-	{[]int{1}, []int{0}, []int{10}, []int{10}, []int{taskplanner.AnyTime}, "mkdir ./test/check_engine"},
-	{[]int{0}, []int{1}, []int{10}, []int{10}, []int{taskplanner.AnyTime}, "mkdir ./test/tu-154"},
+	{[]int{0}, []int{0}, []int{10}, []int{10}, []int{taskplanner.AnyTime}, "mkdir test_folder"},
+	{[]int{1}, []int{0}, []int{10}, []int{10}, []int{taskplanner.AnyTime}, "mkdir check_engine"},
+	{[]int{0}, []int{1}, []int{10}, []int{10}, []int{taskplanner.AnyTime}, "mkdir tu-154"},
 }
 
 type FileRepository struct{}
@@ -71,7 +71,7 @@ func TestMain(t *testing.T) {
 		services.RunTasksByTime(time.Date(time.Now().Year(), time.Month(task.Month[0]), task.Day[0], task.Hour[0], task.Minute[0], 0, 0, time.Now().Location()), errChannel)
 	}
 
-	if !isDirExists("./test/test_folder") || !isDirExists("./test/check_engine") || !isDirExists("./test/tu-154") {
+	if !isDirExists("test_folder") || !isDirExists("check_engine") || !isDirExists("tu-154") {
 		t.Errorf("Folders do not exists, test failed.")
 	}
 
