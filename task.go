@@ -3,6 +3,12 @@
 // If the value is negative, this is equivalent to executing the command after this time interval.
 package taskplanner
 
+import (
+	"os"
+	"os/exec"
+	"strings"
+)
+
 const (
 	TaskMinute = iota
 	TaskHour
@@ -10,7 +16,7 @@ const (
 	TaskMonth
 	TaskDayOfWeek
 	TaskCommand
-	CountOfNumberArguments = TaskCommand
+	CountOfTaskParameters = TaskCommand
 )
 
 const AnyTime = -1
@@ -19,16 +25,20 @@ const FirstSymbol = 0
 const null = 0
 const EachInteger = 1
 
+const taskName = 0
+const firstTaskArgument = 1
+
 type Task struct {
-	minute    []int
-	hour      []int
-	day       []int
-	month     []int
-	dayOfWeek []int
-	command   string
+	minute          []int
+	hour            []int
+	day             []int
+	month           []int
+	dayOfWeek       []int
+	command         string
+	commandExecuted bool
 }
 
-type TaskTimeParameters [CountOfNumberArguments][]int
+type TaskTimeParameters [CountOfTaskParameters][]int
 
 func IsEachTimeParameterRelevant(eachTimeInteger int, currentTimeInteger int) bool {
 	return IsEachTimeParameter(eachTimeInteger) && currentTimeInteger%eachTimeInteger == null
@@ -50,7 +60,7 @@ func NewTask(minute []int, hour []int, day []int, month []int, dayOfWeek []int, 
 }
 
 func (s *Task) GetTaskTimeParameters(currentParameters TaskTimeParameters) TaskTimeParameters {
-	var timeParameters TaskTimeParameters = [CountOfNumberArguments][]int{s.minute, s.hour, s.day, s.month, s.dayOfWeek}
+	var timeParameters TaskTimeParameters = [CountOfTaskParameters][]int{s.minute, s.hour, s.day, s.month, s.dayOfWeek}
 
 	for i := range timeParameters {
 		for j := range timeParameters[i] {
@@ -65,6 +75,17 @@ func (s *Task) GetTaskTimeParameters(currentParameters TaskTimeParameters) TaskT
 	return timeParameters
 }
 
-func (s *Task) GetCommandString() string {
-	return s.command
+func (s *Task) ExecuteTask(errChannel chan<- error) {
+	command := strings.Fields(s.command)
+	cmd := exec.Command(command[taskName], command[firstTaskArgument:]...)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+
+	err := cmd.Run()
+	s.commandExecuted = true
+	if err != nil {
+		errChannel <- err
+	}
 }

@@ -2,6 +2,11 @@
 package main
 
 import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/SashaVolohov/taskPlanner/internal/handler"
 	"github.com/SashaVolohov/taskPlanner/internal/repository"
 	"github.com/SashaVolohov/taskPlanner/internal/service"
@@ -21,8 +26,14 @@ func main() {
 	services := service.NewService(repos)
 	handlers := handler.NewHandler(services)
 
-	handlers.ProcessTasks()
+	ctx, cancel := context.WithCancel(context.Background())
+	go handlers.ProcessTasks(ctx)
 
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+	<-quit
+
+	cancel()
 }
 
 func initConfig() error {

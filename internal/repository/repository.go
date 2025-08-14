@@ -2,16 +2,18 @@
 // Here is only a file with prescribed tasks
 package repository
 
-type TaskList interface {
-	LoadFromFile(path string) (string, error)
+import taskplanner "github.com/SashaVolohov/taskPlanner"
+
+type File interface {
+	LoadFromFile(path string) (tasks []taskplanner.Task, err error)
 }
 
 type Repository struct {
-	TaskList
+	File
 }
 
 func NewRepository() *Repository {
 	return &Repository{
-		TaskList: NewTaskListRepository(),
+		File: NewFileRepository(),
 	}
 }
