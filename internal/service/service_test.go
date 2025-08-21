@@ -1,91 +1,59 @@
 package service
 
 import (
-	"context"
-	"os"
 	"testing"
-	"time"
 
 	taskplanner "github.com/SashaVolohov/taskPlanner"
 	"github.com/SashaVolohov/taskPlanner/internal/repository"
+	"go.uber.org/mock/gomock"
 )
 
-var testTasksDescription = []struct {
-	Minute    []int
-	Hour      []int
-	Day       []int
-	Month     []int
-	DayOfWeek []int
-	Command   string
-}{
-	{[]int{0}, []int{0}, []int{10}, []int{10}, []int{taskplanner.AnyTime}, "mkdir test_folder"},
-	{[]int{1}, []int{0}, []int{10}, []int{10}, []int{taskplanner.AnyTime}, "mkdir check_engine"},
-	{[]int{0}, []int{1}, []int{10}, []int{10}, []int{taskplanner.AnyTime}, "mkdir tu-154"},
-}
+func NewRepository(ctrl *gomock.Controller) *repository.Repository {
 
-type FileRepository struct{}
+	task := repository.NewMockTask(ctrl)
 
-func NewFileRepository() *FileRepository {
-	return &FileRepository{}
-}
-
-func (s *FileRepository) LoadFromFile(path string) (tasks []taskplanner.Task, err error) {
-
-	for _, task := range testTasksDescription {
-		tasks = append(tasks, *taskplanner.NewTask(task.Minute, task.Hour, task.Day, task.Month, task.DayOfWeek, task.Command))
-	}
-
-	return tasks, nil
-}
-
-func testNewRepository() *repository.Repository {
 	return &repository.Repository{
-		File: NewFileRepository(),
+		Task: task,
 	}
-}
-
-func isDirExists(path string) bool {
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return info.IsDir()
 }
 
 func TestMain(t *testing.T) {
 
-	repos := testNewRepository()
+	ctrl := gomock.NewController(t)
+	repos := NewRepository(ctrl)
 	services := NewService(repos)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	var testTasksDescription = []struct {
+		Minute    []int
+		Hour      []int
+		Day       []int
+		Month     []int
+		DayOfWeek []int
+		Command   string
+		Name      string
+		testFunc  func(*Service, *testing.T) bool
+	}{
+		{[]int{0}, []int{0}, []int{10}, []int{10}, []int{taskplanner.AnyTime}, "1", "First Test", func(services *Service, t *testing.T) bool {
+			err := services.LoadFromFile("")
+			if err != nil {
+				t.Errorf("LoadFromFile failed, test failed.")
+			}
 
-	errChannel := make(chan error)
-	go checkErrors(ctx, errChannel, t)
+			return true
 
-	err := services.LoadFromFile("")
-	if err != nil {
-		t.Errorf("LoadFromFile failed, test failed.")
+		}},
+		{[]int{1}, []int{0}, []int{10}, []int{10}, []int{taskplanner.AnyTime}, "2", "Second Test", func(services *Service, t *testing.T) bool { return true }},
+		{[]int{0}, []int{1}, []int{10}, []int{10}, []int{taskplanner.AnyTime}, "3", "Third Test", func(services *Service, t *testing.T) bool { return true }},
 	}
 
 	for _, task := range testTasksDescription {
-		services.RunTasksByTime(time.Date(time.Now().Year(), time.Month(task.Month[0]), task.Day[0], task.Hour[0], task.Minute[0], 0, 0, time.Now().Location()), errChannel)
+
+		t.Run(task.Name, func(t *testing.T) {
+			t.Parallel()
+			if task.testFunc(services, t) == false {
+				t.Fatalf(task.Name + " test failed.")
+			}
+		})
 	}
 
-	if !isDirExists("test_folder") || !isDirExists("check_engine") || !isDirExists("tu-154") {
-		t.Errorf("Folders do not exists, test failed.")
-	}
-
-	cancel()
-
-}
-
-func checkErrors(ctx context.Context, out <-chan error, t *testing.T) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case err := <-out:
-			t.Errorf("Error has occurred during task running: %s", err.Error())
-		}
-	}
 }

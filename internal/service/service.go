@@ -13,27 +13,23 @@ import (
 const workersCount = 3
 
 type Service struct {
-	repo  repository.File
-	tasks []taskplanner.Task
+	repo repository.Task
 }
 
 func NewService(repos *repository.Repository) *Service {
-	return &Service{repo: repos.File}
+	return &Service{repo: repos.Task}
 }
 
 func (s *Service) LoadFromFile(path string) error {
-
-	var err error
-	s.tasks, err = s.repo.LoadFromFile(path)
+	err := s.repo.LoadFromFile(path)
 	return err
-
 }
 
 func (s *Service) GetTasksCount() int {
-	return len(s.tasks)
+	return s.repo.GetTasksCount()
 }
 
-func (s *Service) taskWorker(currentTimeParameters taskplanner.TaskTimeParameters, tasks <-chan taskplanner.Task, errChannel chan<- error, wg *sync.WaitGroup) {
+func (s *Service) taskWorker(currentTimeParameters taskplanner.TaskTimeParameters, tasks <-chan taskplanner.TaskInterface, errChannel chan<- error, wg *sync.WaitGroup) {
 
 	defer func() {
 		wg.Done()
@@ -57,24 +53,23 @@ Exit:
 
 func (s *Service) RunTasksByTime(time time.Time, errChannel chan<- error) {
 
-	var currentTimeParameters taskplanner.TaskTimeParameters
+	var currentTimeParameters = taskplanner.TaskTimeParameters{
+		[]int{time.Minute()},
+		[]int{time.Hour()},
+		[]int{time.Day()},
+		[]int{int(time.Month())},
+		[]int{int(time.Weekday())},
+	}
 
-	currentTimeParameters[taskplanner.TaskMinute] = append(currentTimeParameters[taskplanner.TaskMinute], time.Minute())
-	currentTimeParameters[taskplanner.TaskHour] = append(currentTimeParameters[taskplanner.TaskHour], time.Hour())
-	currentTimeParameters[taskplanner.TaskDay] = append(currentTimeParameters[taskplanner.TaskDay], time.Day())
-	currentTimeParameters[taskplanner.TaskMonth] = append(currentTimeParameters[taskplanner.TaskMonth], int(time.Month()))
-	currentTimeParameters[taskplanner.TaskDayOfWeek] = append(currentTimeParameters[taskplanner.TaskDayOfWeek], int(time.Weekday()))
-
-	tasks := make(chan taskplanner.Task, len(s.tasks))
+	tasks := make(chan taskplanner.TaskInterface, s.GetTasksCount())
 
 	var wg sync.WaitGroup
-
 	for range workersCount {
 		wg.Add(1)
 		go s.taskWorker(currentTimeParameters, tasks, errChannel, &wg)
 	}
 
-	for _, task := range s.tasks {
+	for _, task := range s.repo.GetTasks() {
 		tasks <- task
 	}
 	close(tasks)

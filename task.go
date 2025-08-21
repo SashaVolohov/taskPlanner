@@ -28,6 +28,11 @@ const EachInteger = 1
 const taskName = 0
 const firstTaskArgument = 1
 
+type TaskInterface interface {
+	GetTaskTimeParameters(currentParameters TaskTimeParameters) TaskTimeParameters
+	ExecuteTask(errChannel chan<- error)
+}
+
 type Task struct {
 	minute          []int
 	hour            []int
@@ -39,25 +44,6 @@ type Task struct {
 }
 
 type TaskTimeParameters [CountOfTaskParameters][]int
-
-func IsEachTimeParameterRelevant(eachTimeInteger int, currentTimeInteger int) bool {
-	return IsEachTimeParameter(eachTimeInteger) && currentTimeInteger%eachTimeInteger == null
-}
-
-func IsEachTimeParameter(time int) bool {
-	return time < null
-}
-
-func NewTask(minute []int, hour []int, day []int, month []int, dayOfWeek []int, command string) *Task {
-	return &Task{
-		minute:    minute,
-		hour:      hour,
-		day:       day,
-		month:     month,
-		dayOfWeek: dayOfWeek,
-		command:   command,
-	}
-}
 
 func (s *Task) GetTaskTimeParameters(currentParameters TaskTimeParameters) TaskTimeParameters {
 	var timeParameters TaskTimeParameters = [CountOfTaskParameters][]int{s.minute, s.hour, s.day, s.month, s.dayOfWeek}
@@ -87,5 +73,24 @@ func (s *Task) ExecuteTask(errChannel chan<- error) {
 	s.commandExecuted = true
 	if err != nil {
 		errChannel <- err
+	}
+}
+
+func IsEachTimeParameterRelevant(eachTimeInteger int, currentTimeInteger int) bool {
+	return IsEachTimeParameter(eachTimeInteger) && currentTimeInteger%eachTimeInteger == null
+}
+
+func IsEachTimeParameter(time int) bool {
+	return time < null
+}
+
+func NewTask(minute []int, hour []int, day []int, month []int, dayOfWeek []int, command string) *Task {
+	return &Task{
+		minute:    minute,
+		hour:      hour,
+		day:       day,
+		month:     month,
+		dayOfWeek: dayOfWeek,
+		command:   command,
 	}
 }

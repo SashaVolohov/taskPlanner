@@ -4,16 +4,18 @@ package repository
 
 import taskplanner "github.com/SashaVolohov/taskPlanner"
 
-type File interface {
-	LoadFromFile(path string) (tasks []taskplanner.Task, err error)
+type Task interface {
+	LoadFromFile(path string) (err error)
+	GetTasksCount() int
+	GetTasks() []taskplanner.TaskInterface
 }
 
 type Repository struct {
-	File
+	Task
 }
 
 func NewRepository() *Repository {
 	return &Repository{
-		File: NewFileRepository(),
+		Task: NewTaskRepository(),
 	}
 }
