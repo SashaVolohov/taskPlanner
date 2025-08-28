@@ -3,6 +3,8 @@
 // If the value is negative, this is equivalent to executing the command after this time interval.
 package taskplanner
 
+//go:generate mockgen -source=task.go -destination=./task_mock.go -package=taskplanner
+
 import (
 	"os"
 	"os/exec"

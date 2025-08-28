@@ -22,9 +22,9 @@ func main() {
 		logrus.Fatalf("Error initializing configs: %s", err.Error())
 	}
 
-	repos := repository.NewRepository()
-	services := service.NewService(repos)
-	handlers := handler.NewHandler(services)
+	repo := repository.NewRepository()
+	service := service.NewService(repo)
+	handlers := handler.NewHandler(service)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go handlers.ProcessTasks(ctx)

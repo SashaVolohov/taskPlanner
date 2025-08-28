@@ -1,0 +1,3 @@
+0 0 10 10 * firstCommand
+0 10 10 10 * secondCommand
+0 18 1 10 * thirdCommand

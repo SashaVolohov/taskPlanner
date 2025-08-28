@@ -13,11 +13,11 @@ import (
 const workersCount = 3
 
 type Service struct {
-	repo repository.Task
+	repo repository.Repository
 }
 
-func NewService(repos *repository.Repository) *Service {
-	return &Service{repo: repos.Task}
+func NewService(repos repository.Repository) *Service {
+	return &Service{repo: repos}
 }
 
 func (s *Service) LoadFromFile(path string) error {
